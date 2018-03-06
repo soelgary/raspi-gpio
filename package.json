@@ -7,7 +7,8 @@
   "dependencies": {
     "raspi-peripheral": "^2.0.1",
     "raspi-board": "^5.0.2",
-    "pigpio": "^0.6.4"
+    "pigpio": "^0.6.4",
+    "physis-label": "/home/pi/dev/src/physis-label"
   },
   "devDependencies": {
     "@types/node": "^9.3.0",
@@ -15,7 +16,8 @@
     "@types/raspi-board": "^5.0.0",
     "@types/raspi-peripheral": "^2.0.0",
     "tslint": "^5.9.1",
-    "typescript": "^2.6.2"
+    "typescript": "^2.6.2",
+    "physis-label": "/home/pi/dev/src/physis-label"
   },
   "engines": {
     "node": ">= 4.0.0"

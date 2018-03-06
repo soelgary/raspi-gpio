@@ -25,6 +25,8 @@ THE SOFTWARE.
 import { Peripheral } from 'raspi-peripheral';
 import { Gpio } from 'pigpio';
 import { getGpioNumber } from 'raspi-board';
+const p = require('physis-label');
+const fs = require('fs');
 
 export interface IConfig {
   pin: number | string;
@@ -36,8 +38,8 @@ interface INormalizedConfig {
   pullResistor: number;
 }
 
-export const LOW = 0;
-export const HIGH = 1;
+export const DERP_LOW = 0;
+export const DERP_HIGH = 1;
 
 export const PULL_NONE = Gpio.PUD_OFF;
 export const PULL_DOWN = Gpio.PUD_DOWN;
@@ -76,30 +78,58 @@ export class DigitalOutput extends Peripheral {
 
   private _output: Gpio;
   private _currentValue: number;
+  private _policies: object;
+  private _label: any;
 
   public get value() {
     return this._currentValue;
   }
 
-  constructor(config: number | string | IConfig) {
+  public get policies() {
+    return this._policies;
+  }
+
+  public get label() {
+    return this._label;
+  }
+
+  constructor(config: number | string | IConfig, policies: string) {
     const parsedConfig = parseConfig(config);
     super(parsedConfig.pin);
     this._output = new Gpio(getPin(parsedConfig.pin, this.pins[0]), {
       mode: Gpio.OUTPUT,
       pullUpDown: parsedConfig.pullResistor
     });
+    this._policies = JSON.parse(fs.readFileSync(policies, 'utf-8'));
+    this._label = "pin-" + getPin(parsedConfig.pin, this.pins[0]);
   }
 
-  public write(value: number): void {
+  //public write(value: number): void {
+  public write(value: any | number): void {
+    console.log("We got a label..." + this._label);
+    var val;
+    if (p.label.Labeled.prototype.isPrototypeOf(value)) {
+      console.log("writing a labeled value");
+      const lab = value.getLabel();
+      console.log(lab);
+      if (!lab.canFlowTo(this._label, this._policies)) {
+        throw new Error("Invalid flow");
+      }
+      val = value.getValue();
+    } else {
+      console.log("not writing a labeled value");
+      val = value;
+    }
     if (!this.alive) {
       throw new Error('Attempted to write to a destroyed peripheral');
     }
-    if ([LOW, HIGH].indexOf(value) === -1) {
+    if ([DERP_LOW, DERP_HIGH].indexOf(val) === -1) {
       throw new Error('Invalid write value ' + value);
     }
+    console.log('Setting something...');
     this._currentValue = value;
-    this._output.digitalWrite(this.value);
-    this.emit('change', this.value);
+    this._output.digitalWrite(val);
+    this.emit('change', val);
   }
 }
 
@@ -107,12 +137,22 @@ export class DigitalInput extends Peripheral {
 
   private _input: Gpio;
   private _currentValue: number;
+  private _policies: object;
+  private _label: any;
 
   public get value() {
     return this._currentValue;
   }
 
-  constructor(config: number | string | IConfig) {
+  public get policies() {
+    return this._policies;
+  }
+
+  public get label() {
+    return this._label;
+  }
+
+  constructor(config: number | string | IConfig, policies: string) {
     const parsedConfig = parseConfig(config);
     super(parsedConfig.pin);
     this._input = new Gpio(getPin(parsedConfig.pin, this.pins[0]), {
@@ -124,7 +164,9 @@ export class DigitalInput extends Peripheral {
       this._currentValue = level;
       this.emit('change', this.value);
     }));
+    this._policies = JSON.parse(fs.readFileSync(policies, 'utf-8'));
     this._currentValue = this._input.digitalRead();
+    this._label = "pin-" + getPin(parsedConfig.pin, this.pins[0]);
   }
 
   public destroy() {
@@ -132,11 +174,11 @@ export class DigitalInput extends Peripheral {
     super.destroy();
   }
 
-  public read(): number {
+  public read(): any {
     if (!this.alive) {
       throw new Error('Attempted to read from a destroyed peripheral');
     }
     this._currentValue = this._input.digitalRead();
-    return this.value;
+    return p.label.Labeled(this._label, this.value);
   }
 }
