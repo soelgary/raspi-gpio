@@ -166,7 +166,8 @@ export class DigitalInput extends Peripheral {
     }));
     this._policies = JSON.parse(fs.readFileSync(policies, 'utf-8'));
     this._currentValue = this._input.digitalRead();
-    this._label = "pin-" + getPin(parsedConfig.pin, this.pins[0]);
+    const l = "pin-" + getPin(parsedConfig.pin, this.pins[0]);
+    this._label = new p.label.Label(l);
   }
 
   public destroy() {
@@ -179,6 +180,6 @@ export class DigitalInput extends Peripheral {
       throw new Error('Attempted to read from a destroyed peripheral');
     }
     this._currentValue = this._input.digitalRead();
-    return p.label.Labeled(this._label, this.value);
+    return new p.label.Labeled(this._label, this.value);
   }
 }
